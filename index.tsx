@@ -293,6 +293,12 @@ async function fetchNewParagraph() {
             contents: `Generate a short ${targetLanguageName} paragraph for pronunciation practice, between 50 and 70 words. Ensure the paragraph is simple and clear. Avoid any introductory phrases like 'Here is a paragraph'.`,
         });
         const rawParagraphText = paragraphResponse.text;
+        if (!rawParagraphText) {
+            paragraphDisplayEl.innerHTML = `<p>${getTranslation('noParagraphToListen', "No paragraph loaded to listen to.")}</p>`;
+            newParagraphButton.disabled = false;
+            listenParagraphButton.disabled = false;
+            return;
+        }
         currentParagraphText = cleanParagraphResponse(rawParagraphText);
 
 
@@ -321,7 +327,12 @@ async function fetchNewParagraph() {
                 model: "gemini-2.5-flash-preview-04-17",
                 contents: `Please convert the following ${targetLanguageName} text to International Phonetic Alphabet (IPA) symbols. Provide only the IPA transcription without any additional explanations, introductory phrases, or markdown formatting.\n\nText: "${currentParagraphText}"`,
             });
-             let ipaText = ipaResponse.text.trim();
+            if (!ipaResponse.text) {
+                paragraphIpaDisplayEl.innerHTML = `<p>${getTranslation('noIPAToDisplay', "No IPA transcription to display.")}</p>`;
+                return;
+            }
+
+            let ipaText = ipaResponse.text.trim();
             const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
             const match = ipaText.match(fenceRegex);
             if (match && match[2]) {
@@ -365,6 +376,11 @@ async function handleShowIpaHint() {
             model: "gemini-2.5-flash-preview-04-17",
             contents: `Describe the mouth, tongue, and lip position for producing the IPA sound ${currentIpa} in General American English. Be concise (1-2 short sentences) and focus on articulation for a language learner. Provide this description in ${targetHintLanguageName}.`,
         });
+        if (!hintResponse.text) {
+            ipaHintDisplayEl.innerHTML = `<p>${getTranslation('noHintToDisplay', "No hint to display.")}</p>`;
+            return;
+        }
+        
         let hintText = hintResponse.text.trim();
         const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
         const match = hintText.match(fenceRegex);
