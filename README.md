@@ -6,6 +6,9 @@ Practice English pronunciation with IPA using AI support. Powered by Gemini for 
 
 This contains everything you need to run your app locally.
 
+## Demo
+https://ipa-practice.netlify.app/
+
 ## Run Locally
 
 **Prerequisites:** Node.js
