@@ -1,0 +1,8 @@
+{
+  "name": "Copy of IPA Pronunciation Practice",
+  "description": "An application to practice English pronunciation with IPA symbols, voice examples, simulated recording, and paragraph reading.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}

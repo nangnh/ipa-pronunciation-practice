@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPA Pronunciation Practice</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.0.1"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="app-container">
+        <header>
+            <h1 id="app-title">IPA Pronunciation Practice</h1>
+            <div class="language-selector-container">
+                <h2 id="language-selector-heading" data-translate-key="selectLanguageLabel">Select Language:</h2>
+                <div id="language-button-group" role="menubar" aria-labelledby="language-selector-heading">
+                    <!-- Language buttons will be dynamically inserted here -->
+                </div>
+            </div>
+        </header>
+        <main>
+            <section id="ipa-practice-section" aria-labelledby="ipa-practice-heading-text">
+                <h2 id="ipa-practice-heading-text" data-translate-key="ipaPracticeSectionTitle">IPA Word Practice</h2>
+                <div class="card">
+                    <div id="ipa-display" aria-live="polite">
+                        <div class="ipa-symbol-container">
+                            <p class="ipa-symbol">/iː/</p>
+                            <!-- IPA Hint Button removed -->
+                        </div>
+                        <p class="word-example">sheep</p>
+                        <p class="sentence-example">"The sheep are in the field."</p>
+                    </div>
+                    <div id="ipa-hint-display-container">
+                        <h4 data-translate-key="pronunciationHintTitle">Pronunciation Hint:</h4>
+                        <div id="ipa-hint-display" aria-live="polite">
+                            {/* Content will be auto-loaded */}
+                        </div>
+                    </div>
+                    <div id="match-result" aria-live="polite"></div>
+                    <div class="action-buttons">
+                        <button id="listen-button" aria-label="Listen to example pronunciation">
+                            <span class="material-symbols-outlined">volume_up</span> <span data-translate-key="listenExampleButton">Listen Example</span>
+                        </button>
+                        <button id="record-button" aria-label="Start recording your voice">
+                            <span class="material-symbols-outlined">mic</span> <span data-translate-key="recordButton">Record</span>
+                        </button>
+                        <button id="listen-to-recording-button" aria-label="Listen to your recording" disabled>
+                            <span class="material-symbols-outlined">play_circle</span> <span data-translate-key="playRecordingButton">Play Recording</span>
+                        </button>
+                        <button id="next-button" aria-label="Go to next word">
+                            <span class="material-symbols-outlined">arrow_forward</span> <span data-translate-key="nextWordButton">Next Word</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="paragraph-practice-section" aria-labelledby="paragraph-practice-heading-text">
+                <h2 id="paragraph-practice-heading-text" data-translate-key="paragraphPracticeSectionTitle">Paragraph Reading Practice</h2>
+                <div class="card">
+                    <div id="paragraph-display" aria-live="polite">
+                        <p data-translate-key="loadingParagraph">Loading paragraph...</p>
+                    </div>
+                    <div id="paragraph-ipa-section">
+                        <h3 id="paragraph-ipa-heading" data-translate-key="paragraphIPATitle">Paragraph IPA Transcription</h3>
+                        <div id="paragraph-ipa-display" aria-live="polite">
+                            <p data-translate-key="loadingIPATranscription">Loading IPA transcription...</p>
+                        </div>
+                    </div>
+                    <div class="paragraph-actions">
+                        <button id="listen-paragraph-button" aria-label="Listen to the paragraph text" disabled>
+                            <span class="material-symbols-outlined">volume_up</span> <span data-translate-key="listenParagraphButton">Listen to Paragraph</span>
+                        </button>
+                        <button id="new-paragraph-button" aria-label="Get new paragraph">
+                            <span class="material-symbols-outlined">refresh</span> <span data-translate-key="newParagraphButton">New Paragraph</span>
+                        </button>
+                    </div>
+                    <div class="speed-control-container">
+                        <label for="paragraph-speed-slider" data-translate-key="playbackSpeedLabel">Playback Speed:</label>
+                        <input type="range" id="paragraph-speed-slider" min="0.5" max="2" step="0.1" value="1">
+                        <span id="paragraph-speed-value">1.0x</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <footer>
+            <p id="footer-text" data-translate-key="footerText">Practice your English pronunciation!</p>
+        </footer>
+    </div>
+    <script type="module" src="index.tsx"></script>
+</body>
+</html><link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script>
