@@ -1,9 +1,45 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Dynamic Title will be set by JS -->
     <title>IPA Pronunciation Practice</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"> 
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+
+    <!-- SEO and Social Sharing Meta Tags -->
+    <meta name="description" content="Practice English pronunciation with IPA symbols, voice examples, recording, and paragraph reading. Supports multiple languages.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <!-- IMPORTANT: Replace YOUR_APP_URL_HERE with your actual app URL -->
+    <meta property="og:url" content="https://ipa-practice.netlify.app/"> 
+    <meta property="og:title" content="IPA Pronunciation Practice">
+    <meta property="og:description" content="Practice English pronunciation with IPA symbols, voice examples, recording, and paragraph reading. Supports multiple languages.">
+    <!-- IMPORTANT: Replace YOUR_APP_IMAGE_URL_HERE with a URL to a preview image (e.g., 1200x630px) -->
+    <meta property="og:image" content="/icons/ipa-icon.webp"> 
+
+    <!-- Twitter -->
+    <!-- <meta name="twitter:card" content="summary_large_image"> -->
+     <!-- IMPORTANT: Replace YOUR_APP_URL_HERE with your actual app URL (if different for Twitter) -->
+    <!-- <meta name="twitter:url" content="https://ipa-practice.netlify.app/"> -->
+    <!-- <meta name="twitter:title" content="IPA Pronunciation Practice"> -->
+    <!-- <meta name="twitter:description" content="Practice English pronunciation with IPA symbols, voice examples, recording, and paragraph reading. Supports multiple languages."> -->
+    <!-- IMPORTANT: Replace YOUR_APP_IMAGE_URL_HERE with a URL to a preview image for Twitter -->
+    <!-- <meta name="twitter:image" content="/icons/ipa-icon.png"> -->
+
+    <!-- Theme Color for Browser UI -->
+    <meta name="theme-color" content="#007bff">
+
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script type="importmap">
@@ -13,6 +49,13 @@
     }
     }
     </script>
+    <!--
+      STEP 1: Google AdSense Main Script
+      Replace this comment with the main AdSense script tag provided by Google.
+      It usually looks like:
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+           crossorigin="anonymous"></script>
+    -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2938076670482919" crossorigin="anonymous">
     </script>
 </head>
@@ -27,6 +70,20 @@
                 </div>
             </div>
         </header>
+
+        <!-- AdSense Ad Unit Placeholder: Top Banner -->
+        <div id="adsense-top-banner-container" class="adsense-container" role="complementary" aria-label="Advertisement">
+            <ins class="adsbygoogle"
+                style="display:block"
+                data-ad-client="ca-pub-2938076670482919"
+                data-ad-slot="1707812223"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
         <main>
             <section id="ipa-practice-section" aria-labelledby="ipa-practice-heading-text">
                 <h2 id="ipa-practice-heading-text" data-translate-key="ipaPracticeSectionTitle">IPA Word Practice</h2>
@@ -34,7 +91,6 @@
                     <div id="ipa-display" aria-live="polite">
                         <div class="ipa-symbol-container">
                             <p class="ipa-symbol">/iː/</p>
-                            <!-- IPA Hint Button removed -->
                         </div>
                         <p class="word-example">sheep</p>
                         <p class="sentence-example">"The sheep are in the field."</p>
@@ -62,6 +118,19 @@
                     </div>
                 </div>
             </section>
+
+            <!-- AdSense Ad Unit Placeholder: Middle Content -->
+            <div id="adsense-middle-content-container" class="adsense-container" role="complementary" aria-label="Advertisement">
+                <ins class="adsbygoogle"
+                    style="display:block"
+                    data-ad-client="ca-pub-2938076670482919"
+                    data-ad-slot="3324146223"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
 
             <section id="paragraph-practice-section" aria-labelledby="paragraph-practice-heading-text">
                 <h2 id="paragraph-practice-heading-text" data-translate-key="paragraphPracticeSectionTitle">Paragraph Reading Practice</h2>
@@ -94,11 +163,19 @@
         <footer>
             <!-- AdSense Ad Unit Placeholder: Footer Ad -->
             <div id="adsense-footer-container" class="adsense-container" role="complementary" aria-label="Advertisement">
+                <ins class="adsbygoogle"
+                    style="display:block"
+                    data-ad-client="ca-pub-2938076670482919"
+                    data-ad-slot="3439937549"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
             </div>
             <p id="footer-text" data-translate-key="footerText">Practice your English pronunciation!</p>
         </footer>
     </div>
     <script type="module" src="index.tsx"></script>
 </body>
-</html><link rel="stylesheet" href="index.css">
-<script src="index.tsx" type="module"></script>
+</html>

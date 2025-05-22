@@ -68,6 +68,8 @@ let currentParagraphText: string = "";
 let currentParagraphSpeed: number = 1.0;
 let currentLanguage = 'en';
 let translations: any = {};
+const ipaHintCache: Record<string, string> = {}; // Cache for IPA hints
+
 
 const supportedLanguages: { code: string; nameKey: string; bcp47: string, nativeName?: string, geminiName: string }[] = [
     { code: 'en', nameKey: 'lang_en', bcp47: 'en-US', nativeName: 'English', geminiName: 'English' },
@@ -110,9 +112,13 @@ let currentlyHighlightedWordSpan: HTMLSpanElement | null = null;
 let activeSpeechUtterance: SpeechSynthesisUtterance | null = null;
 
 // Debounce utility function
-function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
+function debounce<F extends (this: any, ...args: any[]) => any>(
+    func: F, 
+    delay: number
+): (this: ThisParameterType<F>, ...args: Parameters<F>) => void {
     let timeoutId: number | undefined;
-    return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
+
+    return function(this: ThisParameterType<F>, ...args: Parameters<F>) {
         const context = this;
         clearTimeout(timeoutId);
         timeoutId = window.setTimeout(() => {
@@ -122,28 +128,37 @@ function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (.
 }
 
 async function loadTranslations(langCode: string): Promise<void> {
+    console.log(`Attempting to load translations for: ${langCode}`);
     try {
         const response = await fetch(`locales/${langCode}.json`);
         if (!response.ok) {
-            throw new Error(`Failed to load ${langCode}.json`);
+            throw new Error(`Failed to load ${langCode}.json. Status: ${response.status} ${response.statusText}. Ensure 'locales' directory is correctly deployed.`);
         }
         translations = await response.json();
+        console.log(`Translations loaded successfully for ${langCode}:`, translations);
         applyTranslations();
-        document.documentElement.lang = langCode; // Set overall page language
+        document.documentElement.lang = langCode; 
     } catch (error) {
-        console.error("Error loading translations:", error);
+        console.error(`Error loading translations for ${langCode}:`, error);
         // Fallback to English if loading fails for another language
         if (langCode !== 'en') {
+            console.warn(`Falling back to English due to error with ${langCode}.`);
             await setLanguage('en'); // This will re-load and re-apply 'en'
+        } else {
+            console.error("CRITICAL: Failed to load core English translations. UI might be broken.");
+            // Display a more user-friendly error on the UI or use hardcoded default keys
+            translations = {}; // Clear potentially partial translations
+            applyTranslations(); // Attempt to apply with empty/default keys
         }
     }
 }
 
 function getTranslation(key: string, fallback?: string): string {
-    return translations[key] || fallback || key;
+    return translations[key] || fallback || `[${key}]`; // Show key if not found
 }
 
 function applyTranslations() {
+    console.log("Applying translations with current language:", currentLanguage);
     document.querySelectorAll<HTMLElement>('[data-translate-key]').forEach(el => {
         const key = el.dataset.translateKey;
         if (key) {
@@ -153,7 +168,7 @@ function applyTranslations() {
             } else if (el.hasAttribute('aria-label') && el.dataset.translateAriaKey) {
                  el.setAttribute('aria-label', getTranslation(el.dataset.translateAriaKey));
             } else if (el.dataset.translateHtml) {
-                el.innerHTML = translation; // For elements where HTML content is needed
+                el.innerHTML = translation; 
             }
             else {
                 el.textContent = translation;
@@ -161,7 +176,6 @@ function applyTranslations() {
         }
     });
 
-     // Update ARIA labels for language buttons
     if (languageButtonGroup) {
         languageButtonGroup.querySelectorAll<HTMLButtonElement>('.language-button').forEach(button => {
             const langCode = button.dataset.langCode;
@@ -189,16 +203,19 @@ function applyTranslations() {
         if (paragraphDisplayEl) paragraphDisplayEl.innerHTML = `<p style="color: red; font-weight: bold;">${errorMsg}</p>`;
         if (paragraphIpaDisplayEl) paragraphIpaDisplayEl.innerHTML = `<p style="color: red; font-weight: bold;">${getTranslation('apiKeyErrorIPA')}</p>`;
     }
+    console.log("Translations applied.");
 }
 
 async function setLanguage(newLangCode: string) {
-    if (currentLanguage === newLangCode && Object.keys(translations).length > 0) {
-        return; // Already on this language and translations loaded
+    console.log(`setLanguage called for: ${newLangCode}. Current language: ${currentLanguage}`);
+    if (currentLanguage === newLangCode && Object.keys(translations).length > 0 && document.documentElement.lang === newLangCode) {
+        console.log(`Language ${newLangCode} is already set and translations seem loaded. Skipping.`);
+        return; 
     }
     currentLanguage = newLangCode;
     localStorage.setItem('selectedLanguage', newLangCode);
+    console.log(`Language changed to ${newLangCode}. Stored in localStorage.`);
 
-    // Update active button state
     if (languageButtonGroup) {
         languageButtonGroup.querySelectorAll<HTMLButtonElement>('.language-button').forEach(btn => {
             if (btn.dataset.langCode === newLangCode) {
@@ -209,16 +226,17 @@ async function setLanguage(newLangCode: string) {
                 btn.setAttribute('aria-checked', 'false');
             }
         });
+        console.log(`Active button state updated for ${newLangCode}.`);
     }
     
     await loadTranslations(newLangCode);
 
-    // Stop any ongoing speech from paragraph or IPA word
     window.speechSynthesis.cancel();
     clearParagraphHighlight();
     activeSpeechUtterance = null;
 
     updatePracticeWordDisplay(); 
+    console.log(`setLanguage for ${newLangCode} completed.`);
 }
 
 
@@ -246,7 +264,6 @@ function clearParagraphHighlight() {
     }
 }
 
-// Function to remove common introductory phrases from the generated paragraph
 function cleanParagraphResponse(text: string): string {
     const commonPrefixes = [
         /^Here is a short paragraph for pronunciation practice:\s*/i,
@@ -274,27 +291,26 @@ function cleanParagraphResponse(text: string): string {
     for (const prefixRegex of commonPrefixes) {
         if (prefixRegex.test(cleanedText)) {
             cleanedText = cleanedText.replace(prefixRegex, "");
-            break; // Assume only one such prefix needs removal
+            break; 
         }
     }
-    return cleanedText.trim(); // Trim again in case replacement left leading/trailing whitespace
+    return cleanedText.trim();
 }
 
 
 async function fetchNewParagraph() {
     if (!paragraphDisplayEl || !paragraphIpaDisplayEl || !listenParagraphButton) return;
 
-    // Stop any ongoing speech and clear highlights
     window.speechSynthesis.cancel();
     clearParagraphHighlight();
     activeSpeechUtterance = null;
 
     const loadingParaMsg = getTranslation('loadingParagraph', 'Loading new paragraph...');
     const loadingIPAMsg = getTranslation('loadingIPATranscription', 'Loading IPA transcription...');
-    paragraphDisplayEl.innerHTML = `<p>${loadingParaMsg}</p>`; // Show loading message
+    paragraphDisplayEl.innerHTML = `<p>${loadingParaMsg}</p>`; 
     paragraphIpaDisplayEl.innerHTML = `<p>${loadingIPAMsg}</p>`;
     currentParagraphText = "";
-    currentParagraphWordElements = []; // Clear previous word elements
+    currentParagraphWordElements = []; 
     newParagraphButton.disabled = true;
     listenParagraphButton.disabled = true;
 
@@ -305,17 +321,15 @@ async function fetchNewParagraph() {
             model: "gemini-2.5-flash-preview-04-17",
             contents: `Generate a short ${targetLanguageName} paragraph for pronunciation practice, between 50 and 70 words. Ensure the paragraph is simple and clear. Avoid any introductory phrases like 'Here is a paragraph'.`,
         });
-        const rawParagraphText = paragraphResponse.text;
-        currentParagraphText = cleanParagraphResponse(rawParagraphText);
+        const rawParagraphText = paragraphResponse?.text;
+        currentParagraphText = cleanParagraphResponse(rawParagraphText ?? '');
 
-
-        // Render paragraph with spans for highlighting
-        paragraphDisplayEl.innerHTML = ''; // Clear loading message
-        const wordRegex = /([a-zA-Z0-9'-]+)|([^a-zA-Z0-9'-]+)/g; // Match words or non-words (punctuation, spaces)
+        paragraphDisplayEl.innerHTML = ''; 
+        const wordRegex = /([a-zA-Z0-9'-]+)|([^a-zA-Z0-9'-]+)/g; 
         let matchResult;
         while ((matchResult = wordRegex.exec(currentParagraphText)) !== null) {
             const segment = matchResult[0];
-            if (matchResult[1]) { // It's a word (group 1)
+            if (matchResult[1]) { 
                 const span = document.createElement('span');
                 span.textContent = segment;
                 span.classList.add('paragraph-word');
@@ -323,7 +337,7 @@ async function fetchNewParagraph() {
                 span.dataset.charEnd = (matchResult.index + segment.length).toString();
                 paragraphDisplayEl.appendChild(span);
                 currentParagraphWordElements.push(span);
-            } else { // It's a non-word (group 2) - punctuation, space
+            } else { 
                 paragraphDisplayEl.appendChild(document.createTextNode(segment));
             }
         }
@@ -334,9 +348,9 @@ async function fetchNewParagraph() {
                 model: "gemini-2.5-flash-preview-04-17",
                 contents: `Please convert the following ${targetLanguageName} text to International Phonetic Alphabet (IPA) symbols. Provide only the IPA transcription without any additional explanations, introductory phrases, or markdown formatting.\n\nText: "${currentParagraphText}"`,
             });
-             let ipaText = ipaResponse.text.trim();
+             let ipaText = ipaResponse?.text?.trim();
             const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-            const match = ipaText.match(fenceRegex);
+            const match = ipaText?.match(fenceRegex);
             if (match && match[2]) {
                 ipaText = match[2].trim();
             }
@@ -371,20 +385,36 @@ async function handleShowIpaHint() {
     const currentIpa = currentData.ipa;
     const selectedLanguageObj = supportedLanguages.find(lang => lang.code === currentLanguage);
     const targetHintLanguageName = selectedLanguageObj ? selectedLanguageObj.geminiName : 'English';
+    const cacheKey = `${currentIpa}-${targetHintLanguageName}`;
 
+    if (ipaHintCache[cacheKey]) {
+        ipaHintDisplayEl.innerHTML = `<p>${ipaHintCache[cacheKey]}</p>`;
+        ipaHintDisplayEl.classList.add('hint-loaded');
+        console.log(`IPA hint for ${currentIpa} in ${targetHintLanguageName} loaded from cache.`);
+        return;
+    }
+
+    ipaHintDisplayEl.innerHTML = `<p>${getTranslation('loadingHint', "Loading hint...")}</p>`;
+    ipaHintDisplayEl.classList.remove('hint-loaded');
 
     try {
         const hintResponse: GenerateContentResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash-preview-04-17",
             contents: `Describe the mouth, tongue, and lip position for producing the IPA sound ${currentIpa} in General American English. Be concise (1-2 short sentences) and focus on articulation for a language learner. Provide this description in ${targetHintLanguageName}.`,
         });
-        let hintText = hintResponse.text.trim();
+        let hintText = hintResponse?.text?.trim();
         const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
-        const match = hintText.match(fenceRegex);
+        const match = hintText?.match(fenceRegex);
         if (match && match[2]) {
             hintText = match[2].trim();
         }
-        ipaHintDisplayEl.innerHTML = `<p>${hintText || getTranslation('hintNotAvailable', "Hint not available at this moment.")}</p>`;
+        
+        if (hintText) {
+            ipaHintCache[cacheKey] = hintText; // Store in cache
+            ipaHintDisplayEl.innerHTML = `<p>${hintText}</p>`;
+        } else {
+            ipaHintDisplayEl.innerHTML = `<p>${getTranslation('hintNotAvailable', "Hint not available at this moment.")}</p>`;
+        }
     } catch (error) {
         console.error("Error fetching IPA hint:", error);
         ipaHintDisplayEl.innerHTML = `<p>${getTranslation('couldNotLoadHint', "Sorry, couldn't load the hint. Please try again.")}</p>`;
@@ -399,8 +429,8 @@ function handleListen() {
     const textToSpeak = `${currentData.word}`; 
 
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Cancel any other speech
-        clearParagraphHighlight(); // Clear paragraph highlight if any
+        window.speechSynthesis.cancel(); 
+        clearParagraphHighlight(); 
         activeSpeechUtterance = null;
 
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
@@ -431,8 +461,8 @@ function handleListenParagraph() {
     }
 
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech, including itself if re-clicked
-        clearParagraphHighlight();     // Clear previous highlight
+        window.speechSynthesis.cancel(); 
+        clearParagraphHighlight();     
 
         activeSpeechUtterance = new SpeechSynthesisUtterance(currentParagraphText);
         
@@ -451,7 +481,7 @@ function handleListenParagraph() {
 
         activeSpeechUtterance.onboundary = (event: SpeechSynthesisEvent) => {
             if (event.name !== 'word') return;
-            clearParagraphHighlight(); // Clear previous word's highlight
+            clearParagraphHighlight(); 
 
             const charIndex = event.charIndex;
             for (const span of currentParagraphWordElements) {
@@ -460,8 +490,6 @@ function handleListenParagraph() {
                 if (charIndex >= start && charIndex < end) {
                     span.classList.add('highlighted-word');
                     currentlyHighlightedWordSpan = span;
-                    // Optional: scroll into view
-                    // span.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
                     break;
                 }
             }
@@ -476,18 +504,13 @@ function handleListenParagraph() {
             console.error("Speech synthesis error:", event.error);
             clearParagraphHighlight();
             activeSpeechUtterance = null;
-            // Optionally display a message to the user
-            if (paragraphDisplayEl) { // Show error in paragraph area if it's still relevant
-                 const errorMsg = getTranslation('ttsNotSupportedParagraph', "Sorry, your browser encountered an error during text-to-speech for the paragraph.");
-                 // Avoid overwriting paragraph text, maybe add a small message below or above
-            }
         };
         
         window.speechSynthesis.speak(activeSpeechUtterance);
 
     } else {
          const errorMsg = getTranslation('ttsNotSupportedParagraph', "Sorry, your browser doesn't support text-to-speech for the paragraph.");
-         if (paragraphDisplayEl) paragraphDisplayEl.innerHTML = `<p>${errorMsg}</p>`; // This will overwrite paragraph words
+         if (paragraphDisplayEl) paragraphDisplayEl.innerHTML = `<p>${errorMsg}</p>`;
          else alert(errorMsg);
     }
 }
@@ -598,14 +621,12 @@ function handleNext() {
     cleanupRecordedAudio();
     if (matchResultEl) matchResultEl.textContent = "";
 
-    // Stop paragraph speech if it's playing
     window.speechSynthesis.cancel();
     clearParagraphHighlight();
     activeSpeechUtterance = null;
 
-
     setTimeout(() => {
-        handleListen(); // Listen to new IPA example word
+        handleListen(); 
     }, 200);
 }
 
@@ -613,28 +634,32 @@ function handleParagraphSpeedChange() {
     if (paragraphSpeedSlider && paragraphSpeedValueEl) {
         currentParagraphSpeed = parseFloat(paragraphSpeedSlider.value);
         paragraphSpeedValueEl.textContent = `${currentParagraphSpeed.toFixed(1)}x`;
-        // If speech is active, update its rate (some browsers might not support changing rate mid-speech)
+        
         if (activeSpeechUtterance && window.speechSynthesis.speaking) {
-            // To change rate, we might need to stop and restart speech
-            // For simplicity, current implementation requires re-clicking "Listen Paragraph"
-            // Or, we can try to update it directly, though behavior varies:
-            // activeSpeechUtterance.rate = currentParagraphSpeed;
-            // Better: cancel and restart
             const speechWasActive = window.speechSynthesis.speaking;
             window.speechSynthesis.cancel(); 
             clearParagraphHighlight();
             if(speechWasActive && currentParagraphText) {
-                handleListenParagraph(); // Restart with new speed
+                handleListenParagraph(); 
             }
         }
     }
 }
 
-async function handleLanguageButtonClick(event: MouseEvent) {
-    const button = event.currentTarget as HTMLButtonElement;
-    const newLang = button.dataset.langCode;
+async function handleLanguageButtonClick(this: HTMLButtonElement, event: MouseEvent) {
+    const buttonElement = this; // Use 'this' which refers to the clicked button
+
+    if (!buttonElement || typeof buttonElement.dataset === 'undefined') {
+        console.error("Language button click: 'this' is not a valid button element or dataset is missing.", buttonElement, event);
+        return;
+    }
+
+    const newLang = buttonElement.dataset.langCode;
     if (newLang) {
+        console.log(`Language button clicked for: ${newLang}. Button element:`, buttonElement);
         await setLanguage(newLang);
+    } else {
+        console.error("Language button clicked, but no langCode found on dataset. Button:", buttonElement, event);
     }
 }
 
@@ -650,22 +675,21 @@ paragraphSpeedSlider?.addEventListener("input", handleParagraphSpeedChange);
 
 // Initial Setup
 document.addEventListener("DOMContentLoaded", async () => {
-    // Debounced language button handler
+    console.log("DOMContentLoaded event fired. Initializing application.");
     const debouncedLanguageHandler = debounce(handleLanguageButtonClick, 300);
 
-    // Populate language buttons
     if (languageButtonGroup) {
         supportedLanguages.forEach(lang => {
             const button = document.createElement('button');
             button.classList.add('language-button');
-            button.textContent = lang.nativeName || lang.geminiName; // Display native name
+            button.textContent = lang.nativeName || lang.geminiName; 
             button.dataset.langCode = lang.code;
-            // ARIA label will be set in applyTranslations
             button.setAttribute('role', 'menuitemradio');
             button.setAttribute('aria-checked', 'false');
-            button.addEventListener("click", debouncedLanguageHandler); // Use debounced handler
+            button.addEventListener("click", debouncedLanguageHandler); 
             languageButtonGroup.appendChild(button);
         });
+        console.log("Language buttons populated.");
     }
     
     const savedLang = localStorage.getItem('selectedLanguage');
@@ -677,12 +701,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else if (supportedLanguages.some(l => l.code === browserLang)) {
         initialLang = browserLang;
     }
+    console.log(`Initial language determined as: ${initialLang} (saved: ${savedLang}, browser: ${browserLang})`);
     
-    await setLanguage(initialLang); // This will load translations and update active button
+    await setLanguage(initialLang); 
 
     if ('speechSynthesis' in window && window.speechSynthesis.getVoices().length === 0) {
         window.speechSynthesis.onvoiceschanged = () => {
-            // Voices might be loaded. This can be used to re-initialize voice selection if needed.
+             console.log("Speech synthesis voices loaded.");
         };
     }
     updatePracticeWordDisplay(); 
@@ -697,7 +722,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!process.env.API_KEY) {
         if (newParagraphButton) newParagraphButton.disabled = true;
         if (listenParagraphButton) listenParagraphButton.disabled = true;
+        console.warn("API_KEY is not set. Some features will be disabled.");
     }
+    console.log("Application initialization complete.");
 });
 
 if (!process.env.API_KEY) {
