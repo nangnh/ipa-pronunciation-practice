@@ -21,7 +21,7 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 20px; /* Adjusted margin */
+    margin-bottom: 10px; /* Adjusted margin for ad container */
     padding: 20px 0;
     border-bottom: 2px solid #007bff;
 }
@@ -84,6 +84,34 @@ header h1 {
     outline-offset: 1px;
 }
 
+/* AdSense Container Styles */
+.adsense-container {
+    width: 100%;
+    min-height: 50px; /* Minimum height to prevent layout collapse */
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* background-color: #f9f9f9; /* Optional: for visibility before ad loads */
+    /* border: 1px dashed #ccc;    /* Optional: for visibility before ad loads */
+    text-align: center;
+}
+
+#adsense-top-banner-container {
+    margin-top: 0; /* No top margin if it's right after header */
+    margin-bottom: 20px;
+}
+
+#adsense-middle-content-container {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#adsense-footer-container {
+    margin-top: 20px;
+    margin-bottom: 10px; /* Space before the actual footer text */
+}
+
 
 main {
     width: 100%;
@@ -120,8 +148,6 @@ section {
     margin: 0;
     font-weight: bold;
 }
-
-/* Removed #ipa-hint-button styles */
 
 #ipa-display .word-example {
     font-size: 1.8em;

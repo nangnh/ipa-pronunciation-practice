@@ -109,6 +109,17 @@ let currentParagraphWordElements: HTMLSpanElement[] = [];
 let currentlyHighlightedWordSpan: HTMLSpanElement | null = null;
 let activeSpeechUtterance: SpeechSynthesisUtterance | null = null;
 
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
+    let timeoutId: number | undefined;
+    return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
+        const context = this;
+        clearTimeout(timeoutId);
+        timeoutId = window.setTimeout(() => {
+            func.apply(context, args);
+        }, delay);
+    };
+}
 
 async function loadTranslations(langCode: string): Promise<void> {
     try {
@@ -192,8 +203,10 @@ async function setLanguage(newLangCode: string) {
         languageButtonGroup.querySelectorAll<HTMLButtonElement>('.language-button').forEach(btn => {
             if (btn.dataset.langCode === newLangCode) {
                 btn.classList.add('active');
+                btn.setAttribute('aria-checked', 'true');
             } else {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-checked', 'false');
             }
         });
     }
@@ -293,12 +306,6 @@ async function fetchNewParagraph() {
             contents: `Generate a short ${targetLanguageName} paragraph for pronunciation practice, between 50 and 70 words. Ensure the paragraph is simple and clear. Avoid any introductory phrases like 'Here is a paragraph'.`,
         });
         const rawParagraphText = paragraphResponse.text;
-        if (!rawParagraphText) {
-            paragraphDisplayEl.innerHTML = `<p>${getTranslation('noParagraphToListen', "No paragraph loaded to listen to.")}</p>`;
-            newParagraphButton.disabled = false;
-            listenParagraphButton.disabled = false;
-            return;
-        }
         currentParagraphText = cleanParagraphResponse(rawParagraphText);
 
 
@@ -327,12 +334,7 @@ async function fetchNewParagraph() {
                 model: "gemini-2.5-flash-preview-04-17",
                 contents: `Please convert the following ${targetLanguageName} text to International Phonetic Alphabet (IPA) symbols. Provide only the IPA transcription without any additional explanations, introductory phrases, or markdown formatting.\n\nText: "${currentParagraphText}"`,
             });
-            if (!ipaResponse.text) {
-                paragraphIpaDisplayEl.innerHTML = `<p>${getTranslation('noIPAToDisplay', "No IPA transcription to display.")}</p>`;
-                return;
-            }
-
-            let ipaText = ipaResponse.text.trim();
+             let ipaText = ipaResponse.text.trim();
             const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
             const match = ipaText.match(fenceRegex);
             if (match && match[2]) {
@@ -376,11 +378,6 @@ async function handleShowIpaHint() {
             model: "gemini-2.5-flash-preview-04-17",
             contents: `Describe the mouth, tongue, and lip position for producing the IPA sound ${currentIpa} in General American English. Be concise (1-2 short sentences) and focus on articulation for a language learner. Provide this description in ${targetHintLanguageName}.`,
         });
-        if (!hintResponse.text) {
-            ipaHintDisplayEl.innerHTML = `<p>${getTranslation('noHintToDisplay', "No hint to display.")}</p>`;
-            return;
-        }
-        
         let hintText = hintResponse.text.trim();
         const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
         const match = hintText.match(fenceRegex);
@@ -653,6 +650,9 @@ paragraphSpeedSlider?.addEventListener("input", handleParagraphSpeedChange);
 
 // Initial Setup
 document.addEventListener("DOMContentLoaded", async () => {
+    // Debounced language button handler
+    const debouncedLanguageHandler = debounce(handleLanguageButtonClick, 300);
+
     // Populate language buttons
     if (languageButtonGroup) {
         supportedLanguages.forEach(lang => {
@@ -663,7 +663,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             // ARIA label will be set in applyTranslations
             button.setAttribute('role', 'menuitemradio');
             button.setAttribute('aria-checked', 'false');
-            button.addEventListener("click", handleLanguageButtonClick);
+            button.addEventListener("click", debouncedLanguageHandler); // Use debounced handler
             languageButtonGroup.appendChild(button);
         });
     }
